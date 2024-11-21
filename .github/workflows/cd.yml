@@ -1,0 +1,35 @@
+name: CD workflow for master branch when code is merged
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  cd:
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Git config
+        run: |
+          git config --global user.email "cd-user@my-app.com"
+          git config --global user.name "cd-ser"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy
+        run: npm run deploy -- -r git@github.com:AbrahamVilchesDeLaCruz/cloud-laboratorio-modulo-2.git
+        
